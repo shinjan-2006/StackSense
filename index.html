@@ -45,6 +45,9 @@
           <p>Define requirements or import scenario JSON.</p></div>
         </header>
         <div class="card-body">
+          <label class="sample-row" for="sample">Load a sample scenario
+            <select class="field-control" id="sample"><option value="">Choose a public scenario…</option></select>
+          </label>
           <div class="file-row"><label for="file">Upload a scenario file</label><input id="file" type="file" accept="application/json"></div>
           <label for="input">Scenario JSON</label>
           <textarea id="input" aria-label="Scenario JSON" spellcheck="false"></textarea>
@@ -75,6 +78,8 @@
           <div class="summary" aria-live="polite">
             <div class="result-heading"><h3 id="style"></h3><span id="badge"></span></div>
             <p id="summary"></p>
+            <p id="core-summary"></p>
+            <p id="key-warning"></p>
             <div id="cost"></div>
           </div>
           <div id="stack" class="register"></div>
@@ -89,6 +94,7 @@
   </main>
   <script src="schema.js"></script>
   <script src="engine.js"></script>
+  <script src="samples.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

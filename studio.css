@@ -65,6 +65,7 @@ label { display: block; min-width: 0; font-size: 13px; font-weight: 600; }
 label small { display: block; margin-top: 5px; color: var(--muted); font-weight: 400; }
 .field-control, textarea, input[type="file"] { display: block; width: 100%; min-width: 0; min-height: 40px; margin-top: 4px; padding: 8px; border: 1px solid var(--control); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
 .file-row { margin-bottom: 12px; }
+.sample-row { margin-bottom: 12px; }
 textarea, pre { padding: 12px; background: var(--paper); font: 13px/1.55 var(--mono); }
 textarea { min-height: 200px; resize: vertical; }
 pre { margin: 0; max-height: 380px; overflow: auto; }
@@ -87,6 +88,8 @@ pre { margin: 0; max-height: 380px; overflow: auto; }
 .summary { background: var(--aqua); border-bottom: 1px solid var(--line); }
 .summary h3 { font-size: 22px; letter-spacing: -.03em; }
 .summary p { font-size: 14px; margin-top: 5px; }
+#core-summary { font-weight: 650; }
+#key-warning:not(:empty) { padding: 8px 10px; margin-top: 10px; border-radius: 6px; background: var(--warning-bg); color: var(--warning); }
 #cost:not(:empty) { margin-top: 10px; font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; }
 #cost details { border-top: 1px solid var(--line); font-weight: 400; }
 #cost details:first-of-type { margin-top: 10px; }

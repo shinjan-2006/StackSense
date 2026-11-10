@@ -8,7 +8,7 @@ const assets = new Map([
   ["/", ["index.html", "text/html"]],
   ["/index.html", ["index.html", "text/html"]],
   ["/studio.css", ["studio.css", "text/css"]],
-  ...["schema.js", "engine.js", "app.js"].map(file => ["/" + file, [file, "text/javascript"]])
+  ...["schema.js", "engine.js", "samples.js", "app.js"].map(file => ["/" + file, [file, "text/javascript"]])
 ]);
 
 function send(res, status, type, body) {

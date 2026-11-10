@@ -57,7 +57,7 @@ for (const field of fields) {
   }
   groups.get(section).append(label);
   controls.set(field.path, control);
-  control.addEventListener("change", () => {
+  control.addEventListener(isSelect ? "change" : "input", () => {
     try {
       const scenario = JSON.parse(input.value);
       if (!scenario || typeof scenario !== "object" || Array.isArray(scenario)) throw new Error();
@@ -134,6 +134,20 @@ $("#reset").onclick = () => {
   reset();
   syncForm();
 };
+const samplePicker = $("#sample");
+for (const sample of globalThis.stackSenseSamples) {
+  samplePicker.add(new Option(`${sample.scenario_id} · ${sample.project.name}`, sample.scenario_id));
+}
+samplePicker.onchange = () => {
+  const sample = globalThis.stackSenseSamples.find(item => item.scenario_id === samplePicker.value);
+  if (!sample) return;
+  importSequence++;
+  generate.disabled = false;
+  input.value = JSON.stringify(sample, null, 2);
+  syncForm();
+  samplePicker.value = "";
+  generate.click();
+};
 generate.onclick = () => {
   if (generate.disabled) return;
   clearError();
@@ -159,6 +173,13 @@ function render(result) {
   badge.dataset.tone = result.status === "ok" ? "normal" : "attention";
   $("#style").textContent = result.stack ? labelFor(result.architecture_style) : "Scenario needs attention";
   $("#summary").textContent = result.summary;
+  $("#core-summary").textContent = result.stack
+    ? ["frontend", "backend", "database", "hosting"].map(layer => result.stack[layer].choice).filter(choice => choice !== "None").join(" · ")
+    : "";
+  const keyWarning = result.warnings.find(warning => warning.severity === "critical")
+    || result.warnings.find(warning => warning.code === "BUDGET_PRESSURE")
+    || result.warnings.find(warning => warning.severity === "warning");
+  $("#key-warning").textContent = keyWarning?.message || "";
   const cost = result.estimated_monthly_cost_usd;
   $("#cost").textContent = cost && result.stack && result.status !== "infeasible"
     ? `Estimated monthly cost: USD ${cost.min}–${cost.max}`

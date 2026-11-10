@@ -7,15 +7,16 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_LEFT
+from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import Image, PageBreak, Paragraph, Preformatted, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 root = Path(__file__).resolve().parent
 out = root / "output" / "pdf"
 out.mkdir(parents=True, exist_ok=True)
-ink = colors.HexColor("#191a23")
+ink = colors.HexColor("#102238")
+navy = colors.HexColor("#10283e")
 lime = colors.HexColor("#b9ff66")
 muted = colors.HexColor("#555661")
 body = ParagraphStyle("Body", fontName="Helvetica", fontSize=11, leading=15, textColor=ink, spaceAfter=9)
@@ -23,6 +24,9 @@ heading = ParagraphStyle("Heading", parent=body, fontName="Helvetica-Bold", font
 title = ParagraphStyle("Title", parent=heading, fontSize=52, leading=56)
 caption = ParagraphStyle("Caption", parent=body, fontSize=10, leading=13)
 reference = ParagraphStyle("Reference", parent=caption, spaceAfter=3)
+cover_label = ParagraphStyle("Cover label", parent=body, fontName="Helvetica-Bold", textColor=lime)
+cover_title = ParagraphStyle("Cover title", parent=title, textColor=colors.white)
+cover_subtitle = ParagraphStyle("Cover subtitle", parent=body, fontSize=14, leading=20, textColor=colors.white)
 story = []
 
 
@@ -50,6 +54,9 @@ def page():
 
 def furniture(canvas, doc):
     width, height = A4
+    if doc.page == 1:
+        canvas.setFillColor(navy)
+        canvas.rect(0, height - 354, width, 354, fill=1, stroke=0)
     canvas.setFillColor(lime)
     canvas.rect(48, height - 40, width - 96, 5, fill=1, stroke=0)
     canvas.setFillColor(muted)
@@ -57,13 +64,34 @@ def furniture(canvas, doc):
     canvas.drawString(48, 32, "StackSense / Synergy '26")
     canvas.drawRightString(width - 48, 32, str(doc.page))
 
+def architecture_diagram():
+    diagram = Drawing(486, 121)
+    nodes = [
+        ("01  INPUT", "Browser form, file or API"),
+        ("02  VALIDATE", "Schema and defaults"),
+        ("03  FILTER", "Region and constraints"),
+        ("04  SELECT", "Scores and service rules"),
+        ("05  ESTIMATE", "Capacity, cost and budget"),
+        ("06  EXPLAIN", "Results and JSON export"),
+    ]
+    positions = [(0, 69), (171, 69), (342, 69), (342, 0), (171, 0), (0, 0)]
+    for (label, detail), (x, y) in zip(nodes, positions):
+        diagram.add(Rect(x, y, 144, 51, rx=6, ry=6, fillColor=navy, strokeColor=None))
+        diagram.add(String(x+10, y+30, label, fontName="Helvetica-Bold", fontSize=10, fillColor=lime))
+        diagram.add(String(x+10, y+13, detail, fontSize=10, fillColor=colors.white))
+    for x1, y1, x2, y2, dx, dy in [(144,94,168,94,1,0), (315,94,339,94,1,0),
+                                    (414,69,414,54,0,-1), (342,25,318,25,-1,0), (171,25,147,25,-1,0)]:
+        diagram.add(Line(x1,y1,x2,y2,strokeColor=navy,strokeWidth=1.25))
+        diagram.add(Polygon([x2,y2,x2-5*dx-3*dy,y2-5*dy+3*dx,x2-5*dx+3*dy,y2-5*dy-3*dx],fillColor=navy,strokeColor=None))
+    return diagram
 
-story.append(Spacer(1, 84))
-p("Synergy '26 / StackSense Challenge")
-p("StackSense", title)
-h("Intelligent Tech Stack Recommendation Engine")
-p("A deterministic architecture workbench for evaluating project constraints.")
-story.append(Spacer(1, 55))
+
+story.append(Spacer(1, 77))
+p("SYNERGY '26  /  STACKSENSE CHALLENGE", cover_label)
+p("StackSense", cover_title)
+p("Intelligent Tech Stack Recommendation Engine", cover_subtitle)
+p("Project report", cover_subtitle)
+story.append(Spacer(1, 112))
 p("Shinjan Sarkar")
 p("C.V. Raman Global University")
 email = os.environ.get("STACKSENSE_REPORT_EMAIL")
@@ -76,15 +104,16 @@ p("StackSense converts a structured project scenario into an architecture recomm
 h("2. Problem understanding")
 p("The useful result is a stack a team can investigate within its constraints. The engine rejects explicit deployment conflicts and estimates budget fit before returning a stack. Delivery speed, language fit, workload and operating burden guide selection. Unknown regions and external data paths are surfaced for review. Provider products are design candidates, not compliance certifications.")
 h("3. System architecture")
-story.append(Preformatted("Browser form / JSON file / HTTP request\n    -> shared schema and validation\n    -> constraints, region and provider\n    -> backend scores and supporting layers\n    -> capacity, cost and budget gates\n    -> recommendation JSON and browser results", ParagraphStyle("Diagram", parent=body, fontName="Courier", fontSize=10, leading=13, spaceAfter=12)))
+story.append(architecture_diagram())
+story.append(Spacer(1, 12))
 p("schema.js defines field types and ranges. engine.js applies defaults, validates, and generates the same result in both runtimes. app.js maps form controls to the JSON scenario and presents cost, conflicts and component details. cli.js supports individual and batch exports. The optional HTTP server provides the same engine over a local endpoint.")
+p("The sample picker loads any of the six bundled public inputs and runs the same engine immediately, including offline. The results summary shows the core stack, monthly estimate and main warning. Expand individual choices for their rationale, alternatives and trade-offs.")
 h("4. Input design and research")
 p("Project type and requested platforms drive architecture shape and client coverage. Name identifies the project and description provides context. User counts, concurrency, traffic pattern, workload and volume inform scale warnings, backend scoring, caching and storage. Team size, languages, experience and DevOps capacity inform framework fit and operational warnings. Budget and delivery horizon set the cost gate and delivery weighting.")
 p("Cloud, deployment model, residency and existing systems resolve the provider and region. Requirements cover identity, realtime, offline behavior, search, storage, payments, tenancy, ML, SEO and service targets. Compliance flags require control and contract review. Priorities steer scoring, search and cache selection, and resilience allowances.")
 p("Optional inputs cover throughput, recovery, sensitivity, portability, search size, concurrent editing, ledger model, offline writes and resumable uploads. They change sizing, safeguards or selected components. The shared schema rejects malformed sections, unknown fields and values, missing required inputs and invalid numeric ranges.")
 p("The browser uses HTML5, CSS and JavaScript. The CLI and optional HTTP server use Node.js 18 or later and were tested on Node.js 24. Both entry points use the same dependency-free engine.")
-page()
-h("4. Input design and research (continued)")
+h("4. Input design and research (field reference)")
 fields = json.loads(subprocess.check_output(["node", "-e", "console.log(JSON.stringify(require('./schema')))"], cwd=root, text=True))
 effects = {
     "scenario_id":"labels JSON and batch filenames", "compliance":"adds applicable scope checks and can restrict production",
@@ -122,8 +151,30 @@ p("Research basis: official provider and framework documentation informs regiona
 h("5. Knowledge base and decision logic")
 p("AWS, Azure and Google Cloud profiles bind hosting, database and object storage to the selected regional provider. Existing Microsoft identity influences provider selection only when the cloud choice is unrestricted. VM mode selects a provider VM and self-operated data services. Local mode uses local hosting, build scripts and telemetry. An unknown required region or incompatible air-gap dependency returns an infeasible result.")
 p("The backend score sums language fit, delivery, realtime throughput and a bounded Microsoft identity ecosystem bonus when applicable. A small or beginner team increases the importance of language fit. A short MVP raises the delivery weight. Performance and scalability priorities raise the realtime term. Ratings are design heuristics. Stable catalog order settles ties. Outputs show winning and runner-up score contributions.")
+p("For a matching language, skill points = 3 × (maintainability priority + team adjustment). The adjustment is 4 for a beginner or a team of at most two, and 2 otherwise. Delivery points = candidate delivery rating × (time-to-market priority + 2 for an MVP of four weeks or less). For realtime workloads, the throughput rating is multiplied by (performance priority + scalability priority) × min(3, peak concurrent users ÷ 2,000) ÷ 4. Matching Microsoft enterprise SSO adds six points to ASP.NET Core.")
 p("A cost band sums compute, database, storage, identity and applicable supporting workloads. App replica count comes from peak requests and a load-test target of 100 requests per second per replica. Database sizing uses explicit storage assumptions. A minimum above budget blocks the stack. An overlapping band retains the warning and offers a smaller pilot with spending allocations. Taxes, labor, transaction fees, SMS and accelerators are excluded from the base band.")
-p("The engine makes no model calls. No API key, network access or feature switch is needed to reproduce the output.")
+p("The runtime has no LLM integration, API key or enablement path. The offline browser and Node CLI both exercise the same rules. The engine has no separate LLM-off switch because there are no runtime calls to disable.")
+page()
+h("6. Sample recommendations")
+scenarios = json.loads((root / "scenarios" / "stacksense_public_scenarios.json").read_text(encoding="utf-8"))
+overview = [("Scenario", "Backend", "Budget", "Estimate", "Pilot target")]
+for scenario in scenarios:
+    identifier = scenario["scenario_id"]
+    result = json.loads((root / "outputs" / f"{identifier}_output.json").read_text(encoding="utf-8"))
+    cost = result["estimated_monthly_cost_usd"]
+    pilot = result.get("budget_fit_plan")
+    overview.append((f"{identifier} · {scenario['project']['name']}", result["stack"]["backend"]["choice"],
+                     f"${scenario['budget']['monthly_infra_usd']:,}", f"${cost['min']:,} to ${cost['max']:,}",
+                     f"${pilot['target_usd']:,.2f}" if pilot else "—"))
+comparison = Table([[Paragraph(escape(cell), caption) for cell in row] for row in overview],
+                   colWidths=[116, 123, 65, 102, 84], repeatRows=1)
+comparison.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),lime), ("VALIGN",(0,0),(-1,-1),"TOP"),
+                               ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.whitesmoke,colors.white])]))
+story.append(comparison)
+story.append(Spacer(1, 10))
+p("All amounts are monthly infrastructure planning estimates in USD. P2 and P6 have an upper estimate above budget. Their pilot targets cover a limited rollout and require usage measurement before expansion.")
+p("P1 is a static portfolio with no application server or database. P3 adds collaborative editing and selects an EU region for GDPR evaluation. P4 keeps its core data services in India and gates live payment processing on review. P5 prioritizes the team's C# skills and Microsoft identity ecosystem. P6 combines local capture and resumable uploads for field work with unreliable connectivity.")
+p("The next pages show all six actual browser results. Each screenshot was captured from the running application with the corresponding public scenario loaded.")
 for i in range(1, 7):
     if i in (1, 3, 5):
         page()
@@ -140,6 +191,9 @@ for identifier in ("P2", "P5"):
     components += [(item["layer"], item) for item in stack["supporting"]]
     for layer, component in components:
         p(f"{layer.title()} · {component['choice']}. {component['justification']}", caption)
+        if layer in ("frontend", "backend", "database", "hosting") and component["alternatives"]:
+            alternative = component["alternatives"][0]
+            p(f"Alternative: {alternative['choice']}. {alternative['why_not']}", reference)
     if identifier == "P2":
         for pilot_id in ("P2", "P6"):
             plan = json.loads((root / "outputs" / f"{pilot_id}_output.json").read_text(encoding="utf-8"))["budget_fit_plan"]
@@ -167,7 +221,8 @@ story.append(table)
 p("Appendix A contains the corresponding unedited screenshots from the running browser engine.")
 page()
 h("8. Validation")
-p("The Node suite checks deterministic output, cost totals, provider changes, feasibility, platform coverage, lifecycle and review gating. Chrome imported all six public inputs and nine edge cases, generated each recommendation, and compared each result with Node. The capture script verified the browser export filename and the generated JSON payload. The screenshots are raw browser captures.")
+p("The Node suite checks deterministic output, cost totals, provider changes, feasibility, platform coverage, lifecycle and review gating. Chrome ran all six public scenarios through the sample picker and nine edge cases through JSON import. The capture script compared each result with Node and checked the browser export filename and JSON payload. The screenshots are raw browser captures.")
+p("A guided-form regression check changed P2's budget from USD 150 to USD 60. The edit cleared the previous result, and regeneration used USD 60 in the warning and matched the Node result for the modified input.")
 p("Scenario checks confirm that P1 stays static, P3 selects an EU region for GDPR evaluation, P4 retains India residency, P5 favors the declared C# skills, and P6 retains local capture and resumable upload support. These are behavior checks against the provided requirements and documented design patterns.")
 h("9. Limitations and future work")
 p("The catalog and ratings are curated rules. Throughput and cost require regional quotes and workload benchmarks. Production review references are supplied by users and require independent review. Availability and latency are targets to test. Expand lifecycle coverage, calibrate estimates and model tenant isolation and legacy migrations in more detail.")

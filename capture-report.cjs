@@ -31,9 +31,13 @@ async function main() {
       {...scenarios[1], scenario_id:"E-retired", infrastructure:{...scenarios[1].infrastructure,existing_systems:["Azure Database for PostgreSQL Single Server"]}}
     ];
     for (const scenario of cases) {
-      await page.locator("#file").setInputFiles({name:"scenario.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(scenario))});
-      await page.waitForFunction(id => JSON.parse(document.querySelector("#input").value).scenario_id === id,scenario.scenario_id);
-      await page.locator("#go").click();
+      if (scenarios.includes(scenario)) {
+        await page.locator("#sample").selectOption(scenario.scenario_id);
+      } else {
+        await page.locator("#file").setInputFiles({name:"scenario.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(scenario))});
+        await page.waitForFunction(id => JSON.parse(document.querySelector("#input").value).scenario_id === id,scenario.scenario_id);
+        await page.locator("#go").click();
+      }
       await page.waitForFunction(id => window.stackSenseResult?.scenario_id === id,scenario.scenario_id);
       const actual = await page.evaluate(() => JSON.stringify(window.stackSenseResult));
       if (actual !== JSON.stringify(require("./engine").recommend(scenario))) throw new Error("Browser output differs from Node");
