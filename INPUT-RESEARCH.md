@@ -4,7 +4,7 @@ The guided form and engine validator use the same schema. Required fields are ma
 
 | Input group | Architectural use | Validation |
 | --- | --- | --- |
-| Project | Project type and target clients guide frontend and architecture shape. Name labels the output. Description provides context without automatic inference. | Known type and at least one unique platform. API-only and client platforms cannot be combined. |
+| Project | Project type and target clients guide frontend and architecture shape. Name labels the project. A fintech description can trigger double-entry ledger inference. | Known type and at least one unique platform. API-only and client platforms cannot be combined. |
 | Scale | Peak concurrency affects realtime backend scoring and capacity reserves. Stored volume affects the storage allowance. Workload and traffic shape affect cache selection. Year-one users flag very high scale with no budget. Launch users are context. | Non-negative counts and storage. Known traffic and workload values. |
 | Team, budget, timeline | Language fit and DevOps capacity guide implementation and operational trade-offs. Budget and delivery schedule surface feasibility risks. | Positive team size and timeline, non-negative USD, known experience, and a language list that may be empty. |
 | Infrastructure and compliance | Deployment model, cloud, residency, and existing systems guide hosting and integration. Conflicting deployment choices and explicitly incompatible residency are flagged. | Known deployment, provider, residency and compliance values. Existing systems must be a list of names. |
@@ -24,6 +24,8 @@ The guided form and engine validator use the same schema. Required fields are ma
 | Ledger model | Adds a double-entry journal with atomic posting, idempotency, reversals, and reconciliation. Older fintech inputs may infer the need from the description. |
 | Offline access | Read-only caches the last view and disables offline writes. Queued writes add durable mutations, retries and conflict handling. |
 | Resumable uploads | Adds a tus endpoint and temporary storage allowance. Defaults on for queued offline media and requires file storage. Online-only and read-only offline workflows resume transfers after reconnect without enabling offline edits. |
+| Regulated use and production review records | Evaluation uses synthetic data and sandbox payments. Production review references must match the review keys returned for the proposed deployment. The engine records attestations. |
+| Approved existing integrations and support records | Select exact names from existing systems and supply a support review reference for each deployed version. Known retired systems stay blocked even with a reference. |
 
 If the modeled range overlaps the budget, the engine keeps the full-rollout estimate and offers a conditional pilot. It starts from the modeled minimum, allocates up to 80% of the remaining budget across variable cost lines in proportion to their estimated headroom, and leaves the balance unallocated. The pilot lists operating controls and a rollout gate. These are spending targets to validate with quotes and measurements.
 

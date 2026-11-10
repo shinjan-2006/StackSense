@@ -2,6 +2,8 @@
 
 StackSense is a deterministic, rule-based technology stack recommendation engine. It validates the challenge schema, applies hard deployment/residency/compliance constraints before soft preferences, explains every recommendation, exports the prescribed JSON structure, and requires neither API keys nor an LLM.
 
+[Project report (PDF)](output/pdf/StackSense_Report.pdf) · [Public scenario outputs](outputs/) · [Browser screenshots](report-evidence/)
+
 ## Technology and prerequisites
 
 StackSense 1.0.0 uses plain JavaScript, HTML5 and CSS. The CLI and optional HTTP server require Node.js 18 or later and were tested on Node.js 24 on Windows. The browser app runs locally in Chrome or Edge. Use `npm.cmd` in Windows PowerShell if script execution policy blocks `npm`.
@@ -54,6 +56,10 @@ The engine never calls an LLM. The same input produces the same output. An expli
 ## Input design and research
 
 Use the grouped fields in the browser or expand **Edit or import JSON** to paste or upload a scenario. See [Input design and research](INPUT-RESEARCH.md) for validation rules, optional field effects, and technology sources.
+
+## Evidence
+
+The report includes all six public recommendations and a table covering all nine edge-case categories. Its appendix links each category to an unedited Chrome capture. See the [P3 EU-region result](report-evidence/P3.png), [blocked unreviewed production](report-evidence/E-regulated.png), and [retirement warning](report-evidence/E-retired.png).
 
 ## LLM features
 

@@ -10,6 +10,13 @@ async function main() {
   try {
     const page = await browser.newPage({viewport:{width:1440,height:900},reducedMotion:"reduce"});
     page.on("pageerror", error => { console.error(error); process.exitCode = 1; });
+    await page.addInitScript(() => {
+      const createObjectURL = URL.createObjectURL.bind(URL);
+      URL.createObjectURL = blob => {
+        if (blob.type === "application/json") window.capturedExport = blob.text();
+        return createObjectURL(blob);
+      };
+    });
     await page.goto(pathToFileURL(path.resolve("index.html")).href);
     const cases = [...scenarios,
       {...scenarios[1], scenario_id:"E-budget", budget:{monthly_infra_usd:0}},
@@ -32,6 +39,7 @@ async function main() {
       if (actual !== JSON.stringify(require("./engine").recommend(scenario))) throw new Error("Browser output differs from Node");
       if (scenario.scenario_id === "E-existing") await page.getByText("Existing systems plan",{exact:true}).click();
       if (scenario.scenario_id === "E-regulated") await page.getByText("Required production verification",{exact:true}).click();
+      if (scenario.scenario_id === "E-skills") await page.getByText("ASP.NET Core",{exact:true}).first().click();
       await page.locator("#result").evaluate(element => element.scrollIntoView({block:"start"}));
       await page.screenshot({path:`report-evidence/${scenario.scenario_id}.png`});
     }
@@ -39,7 +47,7 @@ async function main() {
     await page.locator("#download").click();
     const downloaded = await pending;
     if (downloaded.suggestedFilename() !== "E-retired_output.json") throw new Error("Unexpected export filename");
-    const exported = JSON.parse(fs.readFileSync(await downloaded.path(),"utf8"));
+    const exported = JSON.parse(await page.evaluate(() => window.capturedExport));
     require("node:assert/strict").deepEqual(exported,require("./engine").recommend(cases.at(-1)));
     console.log(`Captured ${cases.length} offline browser runs and verified JSON export.`);
   } finally {
