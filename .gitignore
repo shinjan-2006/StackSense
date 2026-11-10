@@ -1,0 +1,7 @@
+/tmp/
+/.hallmark/
+/node_modules/
+__pycache__/
+.env
+.env.*
+/recommendation.json

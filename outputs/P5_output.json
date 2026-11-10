@@ -1,0 +1,313 @@
+{
+  "scenario_id": "P5",
+  "engine_version": "1.0.0",
+  "status": "ok_with_warnings",
+  "summary": "Run a modular application with ASP.NET Core and regional relational storage or approved local infrastructure.Use synthetic data and sandbox payments until production eligibility is verified.",
+  "architecture_style": "modular_monolith",
+  "stack": {
+    "frontend": {
+      "choice": "React",
+      "justification": "Covers the requested web clients.",
+      "driven_by": [
+        "project.platforms",
+        "requirements.seo_critical",
+        "requirements.offline_support"
+      ],
+      "alternatives": [
+        {
+          "choice": "Separate native client per platform",
+          "why_not": "Separate clients increase parallel implementation and testing work."
+        }
+      ],
+      "tradeoffs": [
+        "Validate accessibility and platform-specific behavior separately."
+      ]
+    },
+    "backend": {
+      "choice": "ASP.NET Core",
+      "justification": "Scored 43.0 (language fit 27.0, delivery 10.0, identity ecosystem 6.0). Matches declared skills: csharp.",
+      "driven_by": [
+        "team.languages",
+        "team.size",
+        "team.experience",
+        "timeline.mvp_weeks",
+        "requirements.realtime",
+        "scale.peak_concurrent_users",
+        "priorities.time_to_market",
+        "priorities.maintainability",
+        "priorities.performance",
+        "priorities.scalability",
+        "requirements.auth",
+        "infrastructure.existing_systems"
+      ],
+      "alternatives": [
+        {
+          "choice": "Node.js (Fastify)",
+          "why_not": "Scored 42.0 (language fit 27.0, delivery 15.0). The winning stack has the higher weighted score."
+        }
+      ],
+      "tradeoffs": [
+        "Ratings are planning heuristics. Benchmark application throughput with production-like payloads."
+      ],
+      "sources": [
+        "https://learn.microsoft.com/aspnet/core/"
+      ]
+    },
+    "database": {
+      "choice": "Azure Database for PostgreSQL (Central India)",
+      "justification": "Relational storage provides transactions and constraints for a read heavy workload.",
+      "driven_by": [
+        "scale.workload",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency"
+      ],
+      "alternatives": [
+        {
+          "choice": "Document database",
+          "why_not": "Would move relational consistency checks into application code."
+        }
+      ],
+      "tradeoffs": [
+        "Index and load-test representative queries and rehearse restores."
+      ],
+      "sources": [
+        "https://azure.microsoft.com/pricing/details/postgresql/flexible-server/"
+      ]
+    },
+    "hosting": {
+      "choice": "Azure App Service (Central India)",
+      "justification": "Run the workload in Central India using the selected deployment model.",
+      "driven_by": [
+        "infrastructure.cloud_preference",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency"
+      ],
+      "alternatives": [
+        {
+          "choice": "Self-hosted containers on separate infrastructure",
+          "why_not": "Adds a separate operations and infrastructure footprint."
+        }
+      ],
+      "tradeoffs": [
+        "Check regional quotas, service coverage and availability targets."
+      ],
+      "sources": [
+        "https://azure.microsoft.com/pricing/details/app-service/linux/"
+      ]
+    },
+    "supporting": [
+      {
+        "layer": "auth",
+        "choice": "Self-hosted Keycloak",
+        "justification": "Keep identity data on the chosen infrastructure. Broker the organization’s existing IdP over OIDC or SAML.",
+        "driven_by": [
+          "requirements.auth",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Hosted authentication",
+            "why_not": "Adds an external processor and separate data-location review."
+          }
+        ],
+        "tradeoffs": [
+          "Operate and patch the identity server."
+        ],
+        "sources": [
+          "https://www.keycloak.org/documentation"
+        ]
+      },
+      {
+        "layer": "storage",
+        "choice": "Azure Blob Storage (Central India)",
+        "justification": "Keep uploads and backups inside the chosen deployment boundary.",
+        "driven_by": [
+          "requirements.file_media_storage",
+          "infrastructure.data_residency",
+          "infrastructure.cloud_preference"
+        ],
+        "alternatives": [
+          {
+            "choice": "Database blobs",
+            "why_not": "Large objects increase database backup and restore load."
+          }
+        ],
+        "tradeoffs": [
+          "Set access controls, retention and backup policies."
+        ],
+        "sources": [
+          "https://azure.microsoft.com/pricing/details/storage/blobs/"
+        ]
+      },
+      {
+        "layer": "ci_cd",
+        "choice": "Local build and release scripts",
+        "justification": "Keep builds portable and publish only approved artifacts.",
+        "driven_by": [
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Hosted CI",
+            "why_not": "Requires an external control plane."
+          }
+        ],
+        "tradeoffs": [
+          "Maintain build reproducibility and dependency provenance."
+        ]
+      },
+      {
+        "layer": "observability",
+        "choice": "OpenTelemetry with local collector",
+        "justification": "Collect telemetry without requiring a third-party endpoint.",
+        "driven_by": [
+          "requirements.availability",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Application logs only",
+            "why_not": "Logs alone lack cross-request tracing."
+          }
+        ],
+        "tradeoffs": [
+          "Redact sensitive fields and bound retention."
+        ],
+        "sources": [
+          "https://opentelemetry.io/docs/collector/"
+        ]
+      }
+    ]
+  },
+  "estimated_monthly_cost_usd": {
+    "min": 54,
+    "max": 224,
+    "breakdown": [
+      {
+        "layer": "Hosting",
+        "min": 25,
+        "max": 100,
+        "basis": "1 serving replicas at a planning allowance of USD 25–100 each per month."
+      },
+      {
+        "layer": "Database",
+        "min": 29,
+        "max": 94,
+        "basis": "Managed primary, with 20 GB planned and a USD 4 storage reserve."
+      },
+      {
+        "layer": "Storage",
+        "min": 0,
+        "max": 5,
+        "basis": "Storage, backup and moderate egress reserve based on supplied volume."
+      },
+      {
+        "layer": "Identity",
+        "min": 0,
+        "max": 25,
+        "basis": "Identity capacity allowance; actual SMS volume and rates must be priced separately."
+      }
+    ],
+    "assumptions": [
+      "Planning allowances are heuristics. Size instances and confirm regional quotes before procurement.",
+      "Excludes taxes, engineering labor, payment transaction fees, separately metered SMS, and accelerator costs."
+    ]
+  },
+  "warnings": [
+    {
+      "code": "PRODUCTION_VERIFICATION_REQUIRED",
+      "severity": "warning",
+      "message": "This stack is conditional. Resolve the listed data and integration checks before production.",
+      "fields": [
+        "compliance",
+        "infrastructure.data_residency",
+        "requirements.auth",
+        "requirements.payments"
+      ]
+    },
+    {
+      "code": "SLO_TEST_REQUIRED",
+      "severity": "warning",
+      "message": "Validate failover and end-to-end latency in the selected region. The stack and planning band do not guarantee either target.",
+      "fields": [
+        "requirements.availability",
+        "requirements.p95_latency_ms"
+      ]
+    }
+  ],
+  "assumptions": [
+    "Regulated workloads are limited to evaluation with synthetic data and sandbox payments until service eligibility, processor agreements, and data paths are verified. Production approval is pending."
+  ],
+  "validation_errors": [],
+  "existing_systems_plan": [
+    {
+      "system": "Microsoft Entra ID (Azure AD)",
+      "action": "integrate",
+      "guidance": "If used for enterprise sign-in, verify that the provider is allowed inside the deployment boundary, then broker it through Keycloak over OIDC or SAML. Test role mapping and deprovisioning."
+    },
+    {
+      "system": "On-prem SQL Server 2019",
+      "action": "review",
+      "guidance": "Check version, ownership, schema and residency. If approved, keep it as the system of record behind a read-only adapter initially. Reconcile exported records before any migration or cutover."
+    },
+    {
+      "system": "Microsoft 365",
+      "action": "review",
+      "guidance": "Inventory supported interfaces, ownership and deployment constraints. Keep the existing system behind an approved API or adapter where possible, and migrate one workflow at a time if reuse is unsafe."
+    }
+  ],
+  "verification_checks": [
+    {
+      "area": "ISO27001",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Azure App Service (Central India)",
+        "Azure Database for PostgreSQL (Central India)",
+        "Self-hosted Keycloak",
+        "Azure Blob Storage (Central India)",
+        "OpenTelemetry with local collector",
+        "Microsoft Entra ID (Azure AD)"
+      ],
+      "requirement": "Include the workload in the information security management scope and document applicable controls and owners.",
+      "review_key": "ISO27001 | Azure App Service (Central India) | india | Azure App Service (Central India) | Azure Database for PostgreSQL (Central India) | Self-hosted Keycloak | Azure Blob Storage (Central India) | OpenTelemetry with local collector | Microsoft Entra ID (Azure AD)"
+    },
+    {
+      "area": "Data residency",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Azure App Service (Central India)",
+        "Azure Database for PostgreSQL (Central India)",
+        "Self-hosted Keycloak",
+        "Azure Blob Storage (Central India)",
+        "OpenTelemetry with local collector",
+        "Microsoft Entra ID (Azure AD)"
+      ],
+      "requirement": "Verify that primary data, backups, logs and operational exports meet the india boundary. A compute region alone does not establish that.",
+      "review_key": "Data residency | Azure App Service (Central India) | india | Azure App Service (Central India) | Azure Database for PostgreSQL (Central India) | Self-hosted Keycloak | Azure Blob Storage (Central India) | OpenTelemetry with local collector | Microsoft Entra ID (Azure AD)"
+    },
+    {
+      "area": "External identity",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Keycloak",
+        "Microsoft Entra ID (Azure AD)"
+      ],
+      "requirement": "Confirm that the upstream IdP is reachable, supports the chosen protocol, and meets retention and transfer requirements.",
+      "review_key": "External identity | Azure App Service (Central India) | india | Keycloak | Microsoft Entra ID (Azure AD)"
+    }
+  ],
+  "regulated_use": "evaluation",
+  "capacity_plan": {
+    "peak_requests_per_second": 15,
+    "request_rate_basis": "Estimated from 300 concurrent users at one request per user every 20 seconds.",
+    "app_replicas": 1,
+    "per_replica_target_rps": 100,
+    "database_storage_gb": 20,
+    "database_storage_basis": "20 GB floor, 30% headroom, and 20% of stored data allocated to database records.",
+    "failover": "Start with a primary database and rehearse restore from a backup.",
+    "verification": "Benchmark the 100 RPS planning target with actual request mix, connection pooling, and failure of one replica. Validate database IOPS, retention, and restore times."
+  }
+}

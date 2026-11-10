@@ -1,0 +1,120 @@
+{
+  "scenario_id": "P1",
+  "engine_version": "1.0.0",
+  "status": "ok",
+  "summary": "Publish a static build with no application server or database.",
+  "architecture_style": "static",
+  "stack": {
+    "frontend": {
+      "choice": "Astro",
+      "justification": "Covers the requested web clients.",
+      "driven_by": [
+        "project.platforms",
+        "requirements.seo_critical",
+        "requirements.offline_support"
+      ],
+      "alternatives": [
+        {
+          "choice": "Separate native client per platform",
+          "why_not": "Separate clients increase parallel implementation and testing work."
+        }
+      ],
+      "tradeoffs": [
+        "Validate accessibility and platform-specific behavior separately."
+      ]
+    },
+    "backend": {
+      "choice": "None",
+      "justification": "Pre-rendered pages do not require a dynamic application API.",
+      "driven_by": [
+        "project.type",
+        "requirements.auth",
+        "requirements.realtime"
+      ],
+      "alternatives": [
+        {
+          "choice": "Node.js (Fastify)",
+          "why_not": "Adds an API runtime for a static workload."
+        }
+      ],
+      "tradeoffs": [
+        "Dynamic features require an API when introduced."
+      ]
+    },
+    "database": {
+      "choice": "None",
+      "justification": "Content is built into published assets.",
+      "driven_by": [
+        "project.type"
+      ],
+      "alternatives": [
+        {
+          "choice": "PostgreSQL",
+          "why_not": "No mutable application records are required."
+        }
+      ],
+      "tradeoffs": [
+        "Editors must rebuild to publish."
+      ]
+    },
+    "hosting": {
+      "choice": "Cloudflare Pages",
+      "justification": "Publish static assets without operating an application server.",
+      "driven_by": [
+        "infrastructure.cloud_preference",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency"
+      ],
+      "alternatives": [
+        {
+          "choice": "Self-hosted containers on separate infrastructure",
+          "why_not": "Adds a separate operations and infrastructure footprint."
+        }
+      ],
+      "tradeoffs": [
+        "Check regional quotas, service coverage and availability targets."
+      ],
+      "sources": [
+        "https://developers.cloudflare.com/pages/platform/limits/"
+      ]
+    },
+    "supporting": [
+      {
+        "layer": "ci_cd",
+        "choice": "Local build and release scripts",
+        "justification": "Keep builds portable and publish only approved artifacts.",
+        "driven_by": [
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Hosted CI",
+            "why_not": "Requires an external control plane."
+          }
+        ],
+        "tradeoffs": [
+          "Maintain build reproducibility and dependency provenance."
+        ]
+      }
+    ]
+  },
+  "estimated_monthly_cost_usd": {
+    "min": 0,
+    "max": 0,
+    "breakdown": [
+      {
+        "layer": "Hosting",
+        "min": 0,
+        "max": 0,
+        "basis": "Free-tier static hosting, conditional on fitting its limits and no paid add-ons."
+      }
+    ],
+    "assumptions": [
+      "Planning allowances are heuristics. Size instances and confirm regional quotes before procurement.",
+      "Excludes taxes, engineering labor, payment transaction fees, separately metered SMS, and accelerator costs."
+    ]
+  },
+  "warnings": [],
+  "assumptions": [],
+  "validation_errors": []
+}

@@ -1,0 +1,421 @@
+{
+  "scenario_id": "P2",
+  "engine_version": "1.0.0",
+  "status": "ok_with_warnings",
+  "summary": "Run a modular application with Node.js (Fastify) and regional relational storage or approved local infrastructure.Use synthetic data and sandbox payments until production eligibility is verified.",
+  "architecture_style": "modular_monolith",
+  "stack": {
+    "frontend": {
+      "choice": "Next.js + React Native",
+      "justification": "Covers the requested web, android clients.",
+      "driven_by": [
+        "project.platforms",
+        "requirements.seo_critical",
+        "requirements.offline_support"
+      ],
+      "alternatives": [
+        {
+          "choice": "Separate native client per platform",
+          "why_not": "Separate clients increase parallel implementation and testing work."
+        }
+      ],
+      "tradeoffs": [
+        "Validate accessibility and platform-specific behavior separately."
+      ]
+    },
+    "backend": {
+      "choice": "Node.js (Fastify)",
+      "justification": "Scored 31.2 (language fit 15.0, delivery 15.0, realtime 1.2). Matches declared skills: typescript, javascript.",
+      "driven_by": [
+        "team.languages",
+        "team.size",
+        "team.experience",
+        "timeline.mvp_weeks",
+        "requirements.realtime",
+        "scale.peak_concurrent_users",
+        "priorities.time_to_market",
+        "priorities.maintainability",
+        "priorities.performance",
+        "priorities.scalability"
+      ],
+      "alternatives": [
+        {
+          "choice": "FastAPI",
+          "why_not": "Scored 30.6 (language fit 15.0, delivery 15.0, realtime 0.6). The winning stack has the higher weighted score."
+        }
+      ],
+      "tradeoffs": [
+        "Ratings are planning heuristics. Benchmark application throughput with production-like payloads."
+      ],
+      "sources": [
+        "https://fastify.dev/docs/latest/"
+      ]
+    },
+    "database": {
+      "choice": "Amazon RDS for PostgreSQL (ap-south-1)",
+      "justification": "Relational storage provides transactions and constraints for a balanced workload.",
+      "driven_by": [
+        "scale.workload",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency"
+      ],
+      "alternatives": [
+        {
+          "choice": "Document database",
+          "why_not": "Would move relational consistency checks into application code."
+        }
+      ],
+      "tradeoffs": [
+        "Index and load-test representative queries and rehearse restores."
+      ],
+      "sources": [
+        "https://aws.amazon.com/rds/postgresql/pricing/"
+      ]
+    },
+    "hosting": {
+      "choice": "Amazon ECS on Fargate (ap-south-1)",
+      "justification": "Run the workload in ap-south-1 using the selected deployment model.",
+      "driven_by": [
+        "infrastructure.cloud_preference",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency"
+      ],
+      "alternatives": [
+        {
+          "choice": "Self-hosted containers on separate infrastructure",
+          "why_not": "Adds a separate operations and infrastructure footprint."
+        }
+      ],
+      "tradeoffs": [
+        "Check regional quotas, service coverage and availability targets."
+      ],
+      "sources": [
+        "https://aws.amazon.com/fargate/pricing/"
+      ]
+    },
+    "supporting": [
+      {
+        "layer": "auth",
+        "choice": "Self-hosted Keycloak",
+        "justification": "Keep identity data on the chosen infrastructure. Add an SMS adapter and verify carrier terms.",
+        "driven_by": [
+          "requirements.auth",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Hosted authentication",
+            "why_not": "Adds an external processor and separate data-location review."
+          }
+        ],
+        "tradeoffs": [
+          "Operate and patch the identity server."
+        ],
+        "sources": [
+          "https://www.keycloak.org/documentation"
+        ]
+      },
+      {
+        "layer": "storage",
+        "choice": "Amazon S3 (ap-south-1)",
+        "justification": "Keep uploads and backups inside the chosen deployment boundary.",
+        "driven_by": [
+          "requirements.file_media_storage",
+          "infrastructure.data_residency",
+          "infrastructure.cloud_preference"
+        ],
+        "alternatives": [
+          {
+            "choice": "Database blobs",
+            "why_not": "Large objects increase database backup and restore load."
+          }
+        ],
+        "tradeoffs": [
+          "Set access controls, retention and backup policies."
+        ],
+        "sources": [
+          "https://aws.amazon.com/s3/pricing/"
+        ]
+      },
+      {
+        "layer": "realtime",
+        "choice": "Application WebSocket gateway",
+        "justification": "Host the connection and fan-out path with the application. Use a continuously available service and verify connection duration limits.",
+        "driven_by": [
+          "requirements.realtime",
+          "scale.peak_concurrent_users"
+        ],
+        "alternatives": [
+          {
+            "choice": "HTTP polling",
+            "why_not": "Repeated requests add delay and traffic for live sessions."
+          }
+        ],
+        "tradeoffs": [
+          "Test reconnect, fan-out and concurrency. Collaborative editing also needs conflict resolution."
+        ],
+        "sources": [
+          "https://www.rfc-editor.org/rfc/rfc6455"
+        ]
+      },
+      {
+        "layer": "search",
+        "choice": "PostgreSQL full-text search",
+        "justification": "Reuse the transactional database and avoid operating a second search service.",
+        "driven_by": [
+          "requirements.full_text_search",
+          "project.type",
+          "advanced.search_documents",
+          "advanced.portability",
+          "priorities.cost"
+        ],
+        "alternatives": [
+          {
+            "choice": "Self-hosted Meilisearch",
+            "why_not": "Needs a separate index and synchronization."
+          }
+        ],
+        "tradeoffs": [
+          "Benchmark ranking and indexing with representative content."
+        ],
+        "sources": [
+          "https://www.postgresql.org/docs/current/textsearch.html"
+        ]
+      },
+      {
+        "layer": "payments",
+        "choice": "Razorpay hosted checkout",
+        "justification": "Use hosted checkout and keep card entry outside the application.",
+        "driven_by": [
+          "requirements.payments",
+          "infrastructure.data_residency",
+          "compliance"
+        ],
+        "alternatives": [
+          {
+            "choice": "Direct card collection",
+            "why_not": "Expands sensitive-data handling and audit scope."
+          }
+        ],
+        "tradeoffs": [
+          "Confirm processor eligibility, transfer terms and webhook verification."
+        ]
+      },
+      {
+        "layer": "ci_cd",
+        "choice": "Local build and release scripts",
+        "justification": "Keep builds portable and publish only approved artifacts.",
+        "driven_by": [
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Hosted CI",
+            "why_not": "Requires an external control plane."
+          }
+        ],
+        "tradeoffs": [
+          "Maintain build reproducibility and dependency provenance."
+        ]
+      },
+      {
+        "layer": "observability",
+        "choice": "OpenTelemetry with local collector",
+        "justification": "Collect telemetry without requiring a third-party endpoint.",
+        "driven_by": [
+          "requirements.availability",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Application logs only",
+            "why_not": "Logs alone lack cross-request tracing."
+          }
+        ],
+        "tradeoffs": [
+          "Redact sensitive fields and bound retention."
+        ],
+        "sources": [
+          "https://opentelemetry.io/docs/collector/"
+        ]
+      }
+    ]
+  },
+  "estimated_monthly_cost_usd": {
+    "min": 54,
+    "max": 309,
+    "breakdown": [
+      {
+        "layer": "Hosting",
+        "min": 25,
+        "max": 100,
+        "basis": "1 serving replicas at a planning allowance of USD 25–100 each per month."
+      },
+      {
+        "layer": "Database",
+        "min": 29,
+        "max": 94,
+        "basis": "Managed primary, with 20 GB planned and a USD 4 storage reserve."
+      },
+      {
+        "layer": "Storage",
+        "min": 0,
+        "max": 5,
+        "basis": "Storage, backup and moderate egress reserve based on supplied volume."
+      },
+      {
+        "layer": "Identity",
+        "min": 0,
+        "max": 45,
+        "basis": "Identity capacity allowance; actual SMS volume and rates must be priced separately."
+      },
+      {
+        "layer": "Realtime",
+        "min": 0,
+        "max": 65,
+        "basis": "Connection and fan-out capacity beyond baseline compute."
+      }
+    ],
+    "assumptions": [
+      "Planning allowances are heuristics. Size instances and confirm regional quotes before procurement.",
+      "Excludes taxes, engineering labor, payment transaction fees, separately metered SMS, and accelerator costs."
+    ]
+  },
+  "warnings": [
+    {
+      "code": "PRODUCTION_VERIFICATION_REQUIRED",
+      "severity": "warning",
+      "message": "This stack is conditional. Resolve the listed data and integration checks before production.",
+      "fields": [
+        "compliance",
+        "infrastructure.data_residency",
+        "requirements.auth",
+        "requirements.payments"
+      ]
+    },
+    {
+      "code": "BUDGET_PRESSURE",
+      "severity": "warning",
+      "message": "The upper estimate of USD 309/month exceeds the USD 150 budget.",
+      "fields": [
+        "budget.monthly_infra_usd"
+      ]
+    },
+    {
+      "code": "SLO_TEST_REQUIRED",
+      "severity": "warning",
+      "message": "Validate failover and end-to-end latency in the selected region. The stack and planning band do not guarantee either target.",
+      "fields": [
+        "requirements.availability",
+        "requirements.p95_latency_ms"
+      ]
+    }
+  ],
+  "assumptions": [
+    "Regulated workloads are limited to evaluation with synthetic data and sandbox payments until service eligibility, processor agreements, and data paths are verified. Production approval is pending.",
+    "The USD 150/month budget plan assumes a limited pilot cohort instead of the full 12-month forecast of 30000 users. The cost band remains the full-scope planning estimate. Keep the requested features and service targets for the pilot, and expand only after measured costs and load tests support it."
+  ],
+  "validation_errors": [],
+  "verification_checks": [
+    {
+      "area": "DPDP",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Amazon ECS on Fargate (ap-south-1)",
+        "Amazon RDS for PostgreSQL (ap-south-1)",
+        "Self-hosted Keycloak",
+        "Amazon S3 (ap-south-1)",
+        "Application WebSocket gateway",
+        "PostgreSQL full-text search",
+        "OpenTelemetry with local collector"
+      ],
+      "requirement": "Document personal data and processors. Review applicable notice, retention, deletion and incident procedures.",
+      "review_key": "DPDP | Amazon ECS on Fargate (ap-south-1) | india | Amazon ECS on Fargate (ap-south-1) | Amazon RDS for PostgreSQL (ap-south-1) | Self-hosted Keycloak | Amazon S3 (ap-south-1) | Application WebSocket gateway | PostgreSQL full-text search | OpenTelemetry with local collector"
+    },
+    {
+      "area": "Data residency",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Amazon ECS on Fargate (ap-south-1)",
+        "Amazon RDS for PostgreSQL (ap-south-1)",
+        "Self-hosted Keycloak",
+        "Amazon S3 (ap-south-1)",
+        "Application WebSocket gateway",
+        "PostgreSQL full-text search",
+        "OpenTelemetry with local collector"
+      ],
+      "requirement": "Verify that primary data, backups, logs and operational exports meet the india boundary. A compute region alone does not establish that.",
+      "review_key": "Data residency | Amazon ECS on Fargate (ap-south-1) | india | Amazon ECS on Fargate (ap-south-1) | Amazon RDS for PostgreSQL (ap-south-1) | Self-hosted Keycloak | Amazon S3 (ap-south-1) | Application WebSocket gateway | PostgreSQL full-text search | OpenTelemetry with local collector"
+    },
+    {
+      "area": "SMS identity",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Keycloak",
+        "SMS gateway"
+      ],
+      "requirement": "Select a carrier and adapter. Verify number and message processing locations, retry limits, and unit cost.",
+      "review_key": "SMS identity | Amazon ECS on Fargate (ap-south-1) | india | Keycloak | SMS gateway"
+    },
+    {
+      "area": "Payment processing",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Razorpay hosted checkout"
+      ],
+      "requirement": "Confirm merchant eligibility, payment method coverage, processing locations and webhook controls.",
+      "review_key": "Payment processing | Amazon ECS on Fargate (ap-south-1) | india | Razorpay hosted checkout"
+    }
+  ],
+  "regulated_use": "evaluation",
+  "capacity_plan": {
+    "peak_requests_per_second": 40,
+    "request_rate_basis": "Estimated from 800 concurrent users at one request per user every 20 seconds.",
+    "app_replicas": 1,
+    "per_replica_target_rps": 100,
+    "database_storage_gb": 20,
+    "database_storage_basis": "20 GB floor, 30% headroom, and 20% of stored data allocated to database records.",
+    "failover": "Start with a primary database and rehearse restore from a backup.",
+    "verification": "Benchmark the 100 RPS planning target with actual request mix, connection pooling, and failure of one replica. Validate database IOPS, retention, and restore times."
+  },
+  "budget_fit_plan": {
+    "status": "conditional_pilot",
+    "monthly_budget_usd": 150,
+    "target_usd": 130.77,
+    "unallocated_usd": 19.23,
+    "allocations": [
+      {
+        "layer": "Hosting",
+        "target_usd": 47.58,
+        "control": "Keep the planned 1 serving replicas as the pilot baseline. Limit admission and approve scaling only after measuring peak load and availability."
+      },
+      {
+        "layer": "Database",
+        "target_usd": 48.57,
+        "control": "Keep backups and required redundancy. Review database utilization before increasing capacity."
+      },
+      {
+        "layer": "Storage",
+        "target_usd": 1.5,
+        "control": "Set per-account upload size and volume limits. Track storage and egress."
+      },
+      {
+        "layer": "Identity",
+        "target_usd": 13.55,
+        "control": "Include carrier charges in this envelope where SMS is used. Limit retries and track cost per successful sign-in."
+      },
+      {
+        "layer": "Realtime",
+        "target_usd": 19.57,
+        "control": "Limit concurrent sessions per rollout cohort and measure fan-out before opening enrollment."
+      }
+    ],
+    "rollout": "Start with one rollout cohort. Preserve realtime and payment flows. Gate new enrollment on observed session and transaction costs.",
+    "acceptance": "Price every line in the required region, including omitted provider fees where applicable. Load-test the planned cohort against the requested SLOs. If it exceeds an envelope, reduce cohort size or raise the budget before launch.",
+    "tradeoff": "This is a spend allocation for a smaller rollout. It does not cover the full forecast or impose a provider billing cap."
+  }
+}

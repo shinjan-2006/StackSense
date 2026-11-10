@@ -1,0 +1,12 @@
+{
+  "name": "stacksense",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deterministic technology-stack recommendation engine",
+  "scripts": {
+    "start": "node server.js",
+    "recommend": "node cli.js",
+    "test": "node test.js",
+    "generate:public": "node cli.js --batch scenarios/stacksense_public_scenarios.json --out outputs"
+  }
+}

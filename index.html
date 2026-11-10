@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Build a project scenario and inspect the architecture StackSense recommends.">
+  <title>StackSense | Stack recommendations</title>
+  <link rel="stylesheet" href="studio.css">
+</head>
+<body>
+  <header class="mast">
+    <div class="frame mast-inner">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m5 12 11-6 11 6-11 6-11-6Zm0 5 11 6 11-6M5 22l11 6 11-6"/></svg></span>
+        StackSense
+      </div>
+      <nav class="mast-nav" aria-label="Main navigation">
+        <a href="#workbench">Workbench</a>
+        <a href="#recommendation-panel">Results</a>
+      </nav>
+    </div>
+  </header>
+  <main class="frame">
+    <header class="page-head">
+      <div class="hero-main">
+        <h1>Find the right stack<br>for your project.</h1>
+        <p>Turn your budget, workload, and deployment constraints into an architecture recommendation you can explain.</p>
+        <a class="button primary hero-action" href="#workbench">Open the workbench</a>
+      </div>
+      <aside class="hero-guide" aria-labelledby="guide-title">
+        <h2 id="guide-title">What you’ll get</h2>
+        <ul>
+          <li><strong>A recommended stack</strong><span>Frontend, backend, database, and hosting.</span></li>
+          <li><strong>A monthly cost range</strong><span>See where the estimate fits your budget.</span></li>
+          <li><strong>Trade-offs and risks</strong><span>Review alternatives and checks before deployment.</span></li>
+        </ul>
+      </aside>
+    </header>
+    <noscript><p>Enable JavaScript to generate a recommendation.</p></noscript>
+    <div class="workspace" id="workbench">
+      <section class="scenario" aria-labelledby="scenario-title">
+        <header class="section-head">
+          <span class="step" aria-hidden="true">01</span>
+          <div><h2 id="scenario-title">Project scenario</h2>
+          <p>Define requirements or import scenario JSON.</p></div>
+        </header>
+        <div class="card-body">
+          <div class="file-row"><label for="file">Upload a scenario file</label><input id="file" type="file" accept="application/json"></div>
+          <label for="input">Scenario JSON</label>
+          <textarea id="input" aria-label="Scenario JSON" spellcheck="false"></textarea>
+          <div class="actions">
+            <button class="button primary" id="go" type="button">Generate recommendation</button>
+            <button class="button secondary" id="reset" type="button">Reset example</button>
+          </div>
+          <div id="error" class="error" role="alert"></div>
+        </div>
+      </section>
+      <section class="recommendation" id="recommendation-panel" aria-labelledby="result-title">
+        <header class="section-head">
+          <span class="step" aria-hidden="true">02</span>
+          <div><h2 id="result-title">Recommendation</h2>
+          <p>Review choices, cost, and deployment risks.</p></div>
+        </header>
+        <div id="empty" class="empty">
+          <div class="empty-intro"><strong>No recommendation yet</strong>
+          <p>Generate a stack from the example, or enter your own scenario.</p></div>
+          <ol class="layer-preview" aria-label="Core layers evaluated">
+            <li><span>01</span> Frontend</li>
+            <li><span>02</span> Backend</li>
+            <li><span>03</span> Database</li>
+            <li><span>04</span> Hosting</li>
+          </ol>
+        </div>
+        <div id="result" hidden>
+          <div class="summary" aria-live="polite">
+            <div class="result-heading"><h3 id="style"></h3><span id="badge"></span></div>
+            <p id="summary"></p>
+            <div id="cost"></div>
+          </div>
+          <div id="stack" class="register"></div>
+          <div class="details">
+            <details><summary>View full JSON result</summary><pre id="output" tabindex="0"></pre></details>
+            <div class="actions"><button class="button secondary" id="download" type="button">Download output JSON</button></div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <footer>No API keys or LLM calls. The same input produces the same recommendation.</footer>
+  </main>
+  <script src="schema.js"></script>
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

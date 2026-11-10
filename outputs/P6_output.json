@@ -1,0 +1,387 @@
+{
+  "scenario_id": "P6",
+  "engine_version": "1.0.0",
+  "status": "ok_with_warnings",
+  "summary": "Run a modular application with FastAPI and regional relational storage or approved local infrastructure.Use synthetic data and sandbox payments until production eligibility is verified.",
+  "architecture_style": "modular_monolith",
+  "stack": {
+    "frontend": {
+      "choice": "React Native",
+      "justification": "Covers the requested android clients. Persist changes locally and synchronize queued writes after reconnecting.",
+      "driven_by": [
+        "project.platforms",
+        "requirements.seo_critical",
+        "requirements.offline_support"
+      ],
+      "alternatives": [
+        {
+          "choice": "Separate native client per platform",
+          "why_not": "Separate clients increase parallel implementation and testing work."
+        }
+      ],
+      "tradeoffs": [
+        "Test queue retries, conflicts and low-memory devices."
+      ],
+      "sources": [
+        "https://developer.android.com/topic/architecture/data-layer/offline-first"
+      ]
+    },
+    "backend": {
+      "choice": "FastAPI",
+      "justification": "Scored 36.0 (language fit 24.0, delivery 12.0). Matches declared skills: python.",
+      "driven_by": [
+        "team.languages",
+        "team.size",
+        "team.experience",
+        "timeline.mvp_weeks",
+        "requirements.realtime",
+        "scale.peak_concurrent_users",
+        "priorities.time_to_market",
+        "priorities.maintainability",
+        "priorities.performance",
+        "priorities.scalability"
+      ],
+      "alternatives": [
+        {
+          "choice": "Node.js (Fastify)",
+          "why_not": "Scored 36.0 (language fit 24.0, delivery 12.0). Catalog order breaks the tie."
+        }
+      ],
+      "tradeoffs": [
+        "Ratings are planning heuristics. Benchmark application throughput with production-like payloads."
+      ],
+      "sources": [
+        "https://fastapi.tiangolo.com/"
+      ]
+    },
+    "database": {
+      "choice": "Amazon RDS for PostgreSQL (ap-south-1)",
+      "justification": "Relational storage provides transactions and constraints for a write heavy workload.",
+      "driven_by": [
+        "scale.workload",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency"
+      ],
+      "alternatives": [
+        {
+          "choice": "Document database",
+          "why_not": "Would move relational consistency checks into application code."
+        }
+      ],
+      "tradeoffs": [
+        "Index and load-test representative queries and rehearse restores."
+      ],
+      "sources": [
+        "https://aws.amazon.com/rds/postgresql/pricing/"
+      ]
+    },
+    "hosting": {
+      "choice": "Amazon ECS on Fargate (ap-south-1)",
+      "justification": "Run the workload in ap-south-1 using the selected deployment model.",
+      "driven_by": [
+        "infrastructure.cloud_preference",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency"
+      ],
+      "alternatives": [
+        {
+          "choice": "Self-hosted containers on separate infrastructure",
+          "why_not": "Adds a separate operations and infrastructure footprint."
+        }
+      ],
+      "tradeoffs": [
+        "Check regional quotas, service coverage and availability targets."
+      ],
+      "sources": [
+        "https://aws.amazon.com/fargate/pricing/"
+      ]
+    },
+    "supporting": [
+      {
+        "layer": "auth",
+        "choice": "Self-hosted Keycloak",
+        "justification": "Keep identity data on the chosen infrastructure. Add an SMS adapter and verify carrier terms.",
+        "driven_by": [
+          "requirements.auth",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Hosted authentication",
+            "why_not": "Adds an external processor and separate data-location review."
+          }
+        ],
+        "tradeoffs": [
+          "Operate and patch the identity server."
+        ],
+        "sources": [
+          "https://www.keycloak.org/documentation"
+        ]
+      },
+      {
+        "layer": "storage",
+        "choice": "Amazon S3 (ap-south-1)",
+        "justification": "Keep uploads and backups inside the chosen deployment boundary.",
+        "driven_by": [
+          "requirements.file_media_storage",
+          "infrastructure.data_residency",
+          "infrastructure.cloud_preference"
+        ],
+        "alternatives": [
+          {
+            "choice": "Database blobs",
+            "why_not": "Large objects increase database backup and restore load."
+          }
+        ],
+        "tradeoffs": [
+          "Set access controls, retention and backup policies."
+        ],
+        "sources": [
+          "https://aws.amazon.com/s3/pricing/"
+        ]
+      },
+      {
+        "layer": "other",
+        "choice": "local SQLite",
+        "justification": "Use a local source of truth. Queue each mutation durably with an idempotency key, retry on reconnect, and use record versions to detect conflicts for user review.",
+        "driven_by": [
+          "requirements.offline_support",
+          "project.platforms",
+          "advanced.offline_access"
+        ],
+        "alternatives": [
+          {
+            "choice": "Network-only data fetching",
+            "why_not": "It fails during outages and cannot provide the requested offline access."
+          }
+        ],
+        "tradeoffs": [
+          "Scope cached data by account, clear it on sign-out, and test disk pressure and reconnect behavior."
+        ],
+        "sources": [
+          "https://developer.android.com/topic/architecture/data-layer/offline-first"
+        ]
+      },
+      {
+        "layer": "storage",
+        "choice": "Self-hosted tus upload endpoint",
+        "justification": "Keep capture metadata in the durable local queue and upload media separately. Persist upload identifiers, resume from the server-confirmed offset, and finalize only after integrity checks.",
+        "driven_by": [
+          "advanced.resumable_uploads",
+          "requirements.offline_support",
+          "requirements.file_media_storage"
+        ],
+        "alternatives": [
+          {
+            "choice": "Single-request uploads",
+            "why_not": "An interruption can force a full retransmission."
+          }
+        ],
+        "tradeoffs": [
+          "Expire abandoned uploads, enforce per-user limits, and test on slow connections and low-memory devices."
+        ],
+        "sources": [
+          "https://tus.io/protocols/resumable-upload"
+        ]
+      },
+      {
+        "layer": "ci_cd",
+        "choice": "Local build and release scripts",
+        "justification": "Keep builds portable and publish only approved artifacts.",
+        "driven_by": [
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Hosted CI",
+            "why_not": "Requires an external control plane."
+          }
+        ],
+        "tradeoffs": [
+          "Maintain build reproducibility and dependency provenance."
+        ]
+      },
+      {
+        "layer": "observability",
+        "choice": "OpenTelemetry with local collector",
+        "justification": "Collect telemetry without requiring a third-party endpoint.",
+        "driven_by": [
+          "requirements.availability",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Application logs only",
+            "why_not": "Logs alone lack cross-request tracing."
+          }
+        ],
+        "tradeoffs": [
+          "Redact sensitive fields and bound retention."
+        ],
+        "sources": [
+          "https://opentelemetry.io/docs/collector/"
+        ]
+      }
+    ]
+  },
+  "estimated_monthly_cost_usd": {
+    "min": 56,
+    "max": 276,
+    "breakdown": [
+      {
+        "layer": "Hosting",
+        "min": 25,
+        "max": 100,
+        "basis": "1 serving replicas at a planning allowance of USD 25–100 each per month."
+      },
+      {
+        "layer": "Resumable uploads",
+        "min": 0,
+        "max": 25,
+        "basis": "Reserve for temporary upload storage and the upload process."
+      },
+      {
+        "layer": "Database",
+        "min": 31,
+        "max": 96,
+        "basis": "Managed primary, with 26 GB planned and a USD 6 storage reserve."
+      },
+      {
+        "layer": "Storage",
+        "min": 0,
+        "max": 10,
+        "basis": "Storage, backup and moderate egress reserve based on supplied volume."
+      },
+      {
+        "layer": "Identity",
+        "min": 0,
+        "max": 45,
+        "basis": "Identity capacity allowance; actual SMS volume and rates must be priced separately."
+      }
+    ],
+    "assumptions": [
+      "Planning allowances are heuristics. Size instances and confirm regional quotes before procurement.",
+      "Excludes taxes, engineering labor, payment transaction fees, separately metered SMS, and accelerator costs."
+    ]
+  },
+  "warnings": [
+    {
+      "code": "PRODUCTION_VERIFICATION_REQUIRED",
+      "severity": "warning",
+      "message": "This stack is conditional. Resolve the listed data and integration checks before production.",
+      "fields": [
+        "compliance",
+        "infrastructure.data_residency",
+        "requirements.auth",
+        "requirements.payments"
+      ]
+    },
+    {
+      "code": "BUDGET_PRESSURE",
+      "severity": "warning",
+      "message": "The upper estimate of USD 276/month exceeds the USD 100 budget.",
+      "fields": [
+        "budget.monthly_infra_usd"
+      ]
+    }
+  ],
+  "assumptions": [
+    "Assumed offline users need to queue writes.",
+    "Assumed offline media uploads must resume after interruptions.",
+    "Regulated workloads are limited to evaluation with synthetic data and sandbox payments until service eligibility, processor agreements, and data paths are verified. Production approval is pending.",
+    "The USD 100/month budget plan assumes a limited pilot cohort instead of the full 12-month forecast of 2000 users. The cost band remains the full-scope planning estimate. Keep the requested features and service targets for the pilot, and expand only after measured costs and load tests support it."
+  ],
+  "validation_errors": [],
+  "verification_checks": [
+    {
+      "area": "DPDP",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Amazon ECS on Fargate (ap-south-1)",
+        "Amazon RDS for PostgreSQL (ap-south-1)",
+        "Self-hosted Keycloak",
+        "Amazon S3 (ap-south-1)",
+        "local SQLite",
+        "Self-hosted tus upload endpoint",
+        "OpenTelemetry with local collector"
+      ],
+      "requirement": "Document personal data and processors. Review applicable notice, retention, deletion and incident procedures.",
+      "review_key": "DPDP | Amazon ECS on Fargate (ap-south-1) | india | Amazon ECS on Fargate (ap-south-1) | Amazon RDS for PostgreSQL (ap-south-1) | Self-hosted Keycloak | Amazon S3 (ap-south-1) | local SQLite | Self-hosted tus upload endpoint | OpenTelemetry with local collector"
+    },
+    {
+      "area": "Data residency",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Amazon ECS on Fargate (ap-south-1)",
+        "Amazon RDS for PostgreSQL (ap-south-1)",
+        "Self-hosted Keycloak",
+        "Amazon S3 (ap-south-1)",
+        "local SQLite",
+        "Self-hosted tus upload endpoint",
+        "OpenTelemetry with local collector"
+      ],
+      "requirement": "Verify that primary data, backups, logs and operational exports meet the india boundary. A compute region alone does not establish that.",
+      "review_key": "Data residency | Amazon ECS on Fargate (ap-south-1) | india | Amazon ECS on Fargate (ap-south-1) | Amazon RDS for PostgreSQL (ap-south-1) | Self-hosted Keycloak | Amazon S3 (ap-south-1) | local SQLite | Self-hosted tus upload endpoint | OpenTelemetry with local collector"
+    },
+    {
+      "area": "SMS identity",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Keycloak",
+        "SMS gateway"
+      ],
+      "requirement": "Select a carrier and adapter. Verify number and message processing locations, retry limits, and unit cost.",
+      "review_key": "SMS identity | Amazon ECS on Fargate (ap-south-1) | india | Keycloak | SMS gateway"
+    }
+  ],
+  "regulated_use": "evaluation",
+  "capacity_plan": {
+    "peak_requests_per_second": 10,
+    "request_rate_basis": "Estimated from 200 concurrent users at one request per user every 20 seconds.",
+    "app_replicas": 1,
+    "per_replica_target_rps": 100,
+    "database_storage_gb": 26,
+    "database_storage_basis": "20 GB floor, 30% headroom, and 20% of stored data allocated to database records.",
+    "failover": "Start with a primary database and rehearse restore from a backup.",
+    "verification": "Benchmark the 100 RPS planning target with actual request mix, connection pooling, and failure of one replica. Validate database IOPS, retention, and restore times."
+  },
+  "budget_fit_plan": {
+    "status": "conditional_pilot",
+    "monthly_budget_usd": 100,
+    "target_usd": 91.2,
+    "unallocated_usd": 8.8,
+    "allocations": [
+      {
+        "layer": "Hosting",
+        "target_usd": 37,
+        "control": "Keep the planned 1 serving replicas as the pilot baseline. Limit admission and approve scaling only after measuring peak load and availability."
+      },
+      {
+        "layer": "Resumable uploads",
+        "target_usd": 4,
+        "control": "Cap concurrent uploads and temporary bytes. Expire abandoned upload sessions without deleting queued client records."
+      },
+      {
+        "layer": "Database",
+        "target_usd": 41.4,
+        "control": "Keep backups and required redundancy. Review database utilization before increasing capacity."
+      },
+      {
+        "layer": "Storage",
+        "target_usd": 1.6,
+        "control": "Compress media before sync, limit per-agent upload volume, and monitor storage and egress."
+      },
+      {
+        "layer": "Identity",
+        "target_usd": 7.2,
+        "control": "Include carrier charges in this envelope where SMS is used. Limit retries and track cost per successful sign-in."
+      }
+    ],
+    "rollout": "Start with one field cohort. Preserve offline capture and queued uploads. Defer onboarding when sync backlog or metered usage exceeds the pilot envelope.",
+    "acceptance": "Price every line in the required region, including omitted provider fees where applicable. Load-test the planned cohort against the requested SLOs. If it exceeds an envelope, reduce cohort size or raise the budget before launch.",
+    "tradeoff": "This is a spend allocation for a smaller rollout. It does not cover the full forecast or impose a provider billing cap."
+  }
+}

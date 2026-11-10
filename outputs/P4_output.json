@@ -1,0 +1,417 @@
+{
+  "scenario_id": "P4",
+  "engine_version": "1.0.0",
+  "status": "ok_with_warnings",
+  "summary": "Run a modular application with Node.js (Fastify) and regional relational storage or approved local infrastructure.Use synthetic data and sandbox payments until production eligibility is verified.",
+  "architecture_style": "modular_monolith",
+  "stack": {
+    "frontend": {
+      "choice": "React + React Native",
+      "justification": "Covers the requested android, ios, web clients.",
+      "driven_by": [
+        "project.platforms",
+        "requirements.seo_critical",
+        "requirements.offline_support"
+      ],
+      "alternatives": [
+        {
+          "choice": "Separate native client per platform",
+          "why_not": "Separate clients increase parallel implementation and testing work."
+        }
+      ],
+      "tradeoffs": [
+        "Validate accessibility and platform-specific behavior separately."
+      ]
+    },
+    "backend": {
+      "choice": "Node.js (Fastify)",
+      "justification": "Scored 27.0 (language fit 18.0, delivery 9.0). Matches declared skills: typescript.",
+      "driven_by": [
+        "team.languages",
+        "team.size",
+        "team.experience",
+        "timeline.mvp_weeks",
+        "requirements.realtime",
+        "scale.peak_concurrent_users",
+        "priorities.time_to_market",
+        "priorities.maintainability",
+        "priorities.performance",
+        "priorities.scalability"
+      ],
+      "alternatives": [
+        {
+          "choice": "Spring Boot",
+          "why_not": "Scored 21.0 (language fit 18.0, delivery 3.0). The winning stack has the higher weighted score."
+        }
+      ],
+      "tradeoffs": [
+        "Ratings are planning heuristics. Benchmark application throughput with production-like payloads."
+      ],
+      "sources": [
+        "https://fastify.dev/docs/latest/"
+      ]
+    },
+    "database": {
+      "choice": "Amazon RDS for PostgreSQL (ap-south-1)",
+      "justification": "Relational storage provides transactions and constraints for a balanced workload.",
+      "driven_by": [
+        "scale.workload",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency"
+      ],
+      "alternatives": [
+        {
+          "choice": "Document database",
+          "why_not": "Would move relational consistency checks into application code."
+        }
+      ],
+      "tradeoffs": [
+        "Index and load-test representative queries and rehearse restores."
+      ],
+      "sources": [
+        "https://aws.amazon.com/rds/postgresql/pricing/"
+      ]
+    },
+    "hosting": {
+      "choice": "Amazon ECS on Fargate (ap-south-1)",
+      "justification": "Run the workload in ap-south-1 using the selected deployment model.",
+      "driven_by": [
+        "infrastructure.cloud_preference",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency"
+      ],
+      "alternatives": [
+        {
+          "choice": "Self-hosted containers on separate infrastructure",
+          "why_not": "Adds a separate operations and infrastructure footprint."
+        }
+      ],
+      "tradeoffs": [
+        "Check regional quotas, service coverage and availability targets."
+      ],
+      "sources": [
+        "https://aws.amazon.com/fargate/pricing/"
+      ]
+    },
+    "supporting": [
+      {
+        "layer": "auth",
+        "choice": "Self-hosted Keycloak",
+        "justification": "Keep identity data on the chosen infrastructure. Add an SMS adapter and verify carrier terms.",
+        "driven_by": [
+          "requirements.auth",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Hosted authentication",
+            "why_not": "Adds an external processor and separate data-location review."
+          }
+        ],
+        "tradeoffs": [
+          "Operate and patch the identity server."
+        ],
+        "sources": [
+          "https://www.keycloak.org/documentation"
+        ]
+      },
+      {
+        "layer": "storage",
+        "choice": "Amazon S3 (ap-south-1)",
+        "justification": "Keep uploads and backups inside the chosen deployment boundary.",
+        "driven_by": [
+          "requirements.file_media_storage",
+          "infrastructure.data_residency",
+          "infrastructure.cloud_preference"
+        ],
+        "alternatives": [
+          {
+            "choice": "Database blobs",
+            "why_not": "Large objects increase database backup and restore load."
+          }
+        ],
+        "tradeoffs": [
+          "Set access controls, retention and backup policies."
+        ],
+        "sources": [
+          "https://aws.amazon.com/s3/pricing/"
+        ]
+      },
+      {
+        "layer": "other",
+        "choice": "PostgreSQL double-entry journal",
+        "justification": "Post balanced debit and credit entries atomically with a unique idempotency key. Reverse entries instead of editing them. Record provider event IDs and reconcile them against settlements.",
+        "driven_by": [
+          "advanced.ledger_model",
+          "project.type",
+          "project.description",
+          "requirements.payments"
+        ],
+        "alternatives": [
+          {
+            "choice": "Mutable balance column",
+            "why_not": "A mutable balance alone cannot explain or replay the movement of funds."
+          }
+        ],
+        "tradeoffs": [
+          "Test concurrent posting, duplicate callbacks, reversals, and reconciliation breaks."
+        ],
+        "sources": [
+          "https://www.postgresql.org/docs/current/tutorial-transactions.html"
+        ]
+      },
+      {
+        "layer": "payments",
+        "choice": "Razorpay hosted checkout",
+        "justification": "Use hosted checkout and keep card entry outside the application.",
+        "driven_by": [
+          "requirements.payments",
+          "infrastructure.data_residency",
+          "compliance"
+        ],
+        "alternatives": [
+          {
+            "choice": "Direct card collection",
+            "why_not": "Expands sensitive-data handling and audit scope."
+          }
+        ],
+        "tradeoffs": [
+          "Confirm processor eligibility, transfer terms and webhook verification."
+        ]
+      },
+      {
+        "layer": "ml",
+        "choice": "ONNX Runtime inference service",
+        "justification": "Run model processing inside the deployment boundary.",
+        "driven_by": [
+          "requirements.ml_features",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "External ML API",
+            "why_not": "Adds an external data path and may not support the requested workflow."
+          }
+        ],
+        "tradeoffs": [
+          "Model and accelerator sizing need a separate benchmark and budget."
+        ]
+      },
+      {
+        "layer": "ci_cd",
+        "choice": "Local build and release scripts",
+        "justification": "Keep builds portable and publish only approved artifacts.",
+        "driven_by": [
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Hosted CI",
+            "why_not": "Requires an external control plane."
+          }
+        ],
+        "tradeoffs": [
+          "Maintain build reproducibility and dependency provenance."
+        ]
+      },
+      {
+        "layer": "observability",
+        "choice": "OpenTelemetry with local collector",
+        "justification": "Collect telemetry without requiring a third-party endpoint.",
+        "driven_by": [
+          "requirements.availability",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Application logs only",
+            "why_not": "Logs alone lack cross-request tracing."
+          }
+        ],
+        "tradeoffs": [
+          "Redact sensitive fields and bound retention."
+        ],
+        "sources": [
+          "https://opentelemetry.io/docs/collector/"
+        ]
+      }
+    ]
+  },
+  "estimated_monthly_cost_usd": {
+    "min": 261,
+    "max": 1201,
+    "breakdown": [
+      {
+        "layer": "Hosting",
+        "min": 150,
+        "max": 600,
+        "basis": "6 serving replicas at a planning allowance of USD 25–100 each per month."
+      },
+      {
+        "layer": "Database",
+        "min": 111,
+        "max": 306,
+        "basis": "Primary plus standby, with 130 GB planned and a USD 26 storage reserve."
+      },
+      {
+        "layer": "Storage",
+        "min": 0,
+        "max": 50,
+        "basis": "Storage, backup and moderate egress reserve based on supplied volume."
+      },
+      {
+        "layer": "Identity",
+        "min": 0,
+        "max": 45,
+        "basis": "Identity capacity allowance; actual SMS volume and rates must be priced separately."
+      },
+      {
+        "layer": "ML",
+        "min": 0,
+        "max": 200,
+        "basis": "Provisional CPU/model capacity allowance; excludes accelerator training and paid model fees."
+      }
+    ],
+    "assumptions": [
+      "Planning allowances are heuristics. Size instances and confirm regional quotes before procurement.",
+      "Excludes taxes, engineering labor, payment transaction fees, separately metered SMS, and accelerator costs."
+    ]
+  },
+  "warnings": [
+    {
+      "code": "PRODUCTION_VERIFICATION_REQUIRED",
+      "severity": "warning",
+      "message": "This stack is conditional. Resolve the listed data and integration checks before production.",
+      "fields": [
+        "compliance",
+        "infrastructure.data_residency",
+        "requirements.auth",
+        "requirements.payments"
+      ]
+    },
+    {
+      "code": "SLO_TEST_REQUIRED",
+      "severity": "warning",
+      "message": "Validate failover and end-to-end latency in the selected region. The stack and planning band do not guarantee either target.",
+      "fields": [
+        "requirements.availability",
+        "requirements.p95_latency_ms"
+      ]
+    }
+  ],
+  "assumptions": [
+    "Inferred double-entry ledger from the fintech project description.",
+    "Regulated workloads are limited to evaluation with synthetic data and sandbox payments until service eligibility, processor agreements, and data paths are verified. Production approval is pending."
+  ],
+  "validation_errors": [],
+  "verification_checks": [
+    {
+      "area": "PCI DSS",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Amazon ECS on Fargate (ap-south-1)",
+        "Razorpay hosted checkout"
+      ],
+      "requirement": "Confirm processor compliance for the services used, document responsibilities in writing, and confirm the assessment with the acquirer. Keep account data out of application requests, logs and backups.",
+      "review_key": "PCI DSS | Amazon ECS on Fargate (ap-south-1) | india | Amazon ECS on Fargate (ap-south-1) | Razorpay hosted checkout",
+      "source": "https://www.pcisecuritystandards.org/faqs/1092/"
+    },
+    {
+      "area": "RBI LOCALISATION",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Amazon ECS on Fargate (ap-south-1)",
+        "Amazon RDS for PostgreSQL (ap-south-1)",
+        "Self-hosted Keycloak",
+        "Amazon S3 (ap-south-1)",
+        "PostgreSQL double-entry journal",
+        "ONNX Runtime inference service",
+        "OpenTelemetry with local collector"
+      ],
+      "requirement": "Verify the scope of the localisation obligation and document where primary records, replicas, backups and processor data are kept.",
+      "review_key": "RBI LOCALISATION | Amazon ECS on Fargate (ap-south-1) | india | Amazon ECS on Fargate (ap-south-1) | Amazon RDS for PostgreSQL (ap-south-1) | Self-hosted Keycloak | Amazon S3 (ap-south-1) | PostgreSQL double-entry journal | ONNX Runtime inference service | OpenTelemetry with local collector"
+    },
+    {
+      "area": "DPDP",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Amazon ECS on Fargate (ap-south-1)",
+        "Amazon RDS for PostgreSQL (ap-south-1)",
+        "Self-hosted Keycloak",
+        "Amazon S3 (ap-south-1)",
+        "PostgreSQL double-entry journal",
+        "ONNX Runtime inference service",
+        "OpenTelemetry with local collector"
+      ],
+      "requirement": "Document personal data and processors. Review applicable notice, retention, deletion and incident procedures.",
+      "review_key": "DPDP | Amazon ECS on Fargate (ap-south-1) | india | Amazon ECS on Fargate (ap-south-1) | Amazon RDS for PostgreSQL (ap-south-1) | Self-hosted Keycloak | Amazon S3 (ap-south-1) | PostgreSQL double-entry journal | ONNX Runtime inference service | OpenTelemetry with local collector"
+    },
+    {
+      "area": "ISO27001",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Amazon ECS on Fargate (ap-south-1)",
+        "Amazon RDS for PostgreSQL (ap-south-1)",
+        "Self-hosted Keycloak",
+        "Amazon S3 (ap-south-1)",
+        "PostgreSQL double-entry journal",
+        "ONNX Runtime inference service",
+        "OpenTelemetry with local collector"
+      ],
+      "requirement": "Include the workload in the information security management scope and document applicable controls and owners.",
+      "review_key": "ISO27001 | Amazon ECS on Fargate (ap-south-1) | india | Amazon ECS on Fargate (ap-south-1) | Amazon RDS for PostgreSQL (ap-south-1) | Self-hosted Keycloak | Amazon S3 (ap-south-1) | PostgreSQL double-entry journal | ONNX Runtime inference service | OpenTelemetry with local collector"
+    },
+    {
+      "area": "Data residency",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Amazon ECS on Fargate (ap-south-1)",
+        "Amazon RDS for PostgreSQL (ap-south-1)",
+        "Self-hosted Keycloak",
+        "Amazon S3 (ap-south-1)",
+        "PostgreSQL double-entry journal",
+        "ONNX Runtime inference service",
+        "OpenTelemetry with local collector"
+      ],
+      "requirement": "Verify that primary data, backups, logs and operational exports meet the india boundary. A compute region alone does not establish that.",
+      "review_key": "Data residency | Amazon ECS on Fargate (ap-south-1) | india | Amazon ECS on Fargate (ap-south-1) | Amazon RDS for PostgreSQL (ap-south-1) | Self-hosted Keycloak | Amazon S3 (ap-south-1) | PostgreSQL double-entry journal | ONNX Runtime inference service | OpenTelemetry with local collector"
+    },
+    {
+      "area": "SMS identity",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Keycloak",
+        "SMS gateway"
+      ],
+      "requirement": "Select a carrier and adapter. Verify number and message processing locations, retry limits, and unit cost.",
+      "review_key": "SMS identity | Amazon ECS on Fargate (ap-south-1) | india | Keycloak | SMS gateway"
+    },
+    {
+      "area": "Payment processing",
+      "status": "unverified",
+      "blocking_before_production": true,
+      "affected": [
+        "Razorpay hosted checkout"
+      ],
+      "requirement": "Confirm merchant eligibility, payment method coverage, processing locations and webhook controls.",
+      "review_key": "Payment processing | Amazon ECS on Fargate (ap-south-1) | india | Razorpay hosted checkout"
+    }
+  ],
+  "regulated_use": "evaluation",
+  "capacity_plan": {
+    "peak_requests_per_second": 500,
+    "request_rate_basis": "Estimated from 10000 concurrent users at one request per user every 20 seconds.",
+    "app_replicas": 6,
+    "per_replica_target_rps": 100,
+    "database_storage_gb": 130,
+    "database_storage_basis": "20 GB floor, 30% headroom, and 20% of stored data allocated to database records.",
+    "failover": "Distribute application replicas across failure zones and configure a managed database standby in the selected region.",
+    "verification": "Benchmark the 100 RPS planning target with actual request mix, connection pooling, and failure of one replica. Validate database IOPS, retention, and restore times."
+  }
+}
